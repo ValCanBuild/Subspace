@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <Preference
+        android:key="@string/key_folder_to_monitor"
+        android:summary="@string/select_folder_to_monitor"
+        android:title="@string/folder_to_monitor"
+        android:persistent="true"/>
+
+</PreferenceScreen>

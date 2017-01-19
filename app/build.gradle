@@ -21,6 +21,14 @@ android {
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
+
+    dataBinding {
+        enabled true
+    }
+
+    kapt {
+        generateStubs = true
+    }
 }
 
 dependencies {
@@ -29,6 +37,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.1.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.0-beta4'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    kapt 'com.android.databinding:compiler:2.3.0-beta2'
 
     testCompile 'junit:junit:4.12'
 
@@ -36,6 +45,7 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 }
+
 repositories {
     mavenCentral()
 }
