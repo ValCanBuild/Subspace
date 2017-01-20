@@ -13,6 +13,7 @@ import android.widget.Toast
 import com.rockspin.subspace.R
 import com.rockspin.subspace.databinding.ActivityMainBinding
 import com.rockspin.subspace.network.SubApi
+import com.rockspin.subspace.util.SubFileHelper
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import java.io.File
@@ -53,8 +54,6 @@ class MainActivity : AppCompatActivity() {
         // 4. Try and download a subtitle for that file
         // 5. Report success / error
 
-        val allowedExtensions = arrayOf("avi", "mkv", "mp4", "mov")
-
         val rootFolderPathStr = PreferenceManager.getDefaultSharedPreferences(this).getString(getString(R.string
             .key_folder_to_monitor), null)
 
@@ -63,30 +62,18 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val rootFolder = File(rootFolderPathStr)
-
-        val movieFile = rootFolder.listFiles { it -> allowedExtensions.contains(it.extension) }
-            .filter { it ->
-                val subFile = File("${it.parent}/${it.nameWithoutExtension}.srt")
-                !subFile.exists()
-            }
-            .firstOrNull()
-
-        if (movieFile == null) {
+        val subFileHelper = SubFileHelper(rootFolderPathStr)
+        if (!subFileHelper.hasSubCandidates) {
             Toast.makeText(this, "No available files found", Toast.LENGTH_SHORT).show()
             return
         }
 
+        val movieFile = subFileHelper.subCandidates.first()
+
         subApi.downloadSubtitleForMovieFile(movieFile)
             .subscribeOn(Schedulers.io())
             .map { subtitle ->
-                val srtFile = File("${movieFile.parent}/${movieFile.nameWithoutExtension}.srt")
-                val fileWriter = FileWriter(srtFile)
-                fileWriter.write(subtitle)
-                fileWriter.flush()
-                fileWriter.close()
-
-                srtFile
+                subFileHelper.createSubtitleForFile(movieFile, subtitle)
             }
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({ file ->
