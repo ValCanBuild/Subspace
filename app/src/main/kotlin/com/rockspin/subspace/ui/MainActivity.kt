@@ -14,10 +14,10 @@ import com.rockspin.subspace.R
 import com.rockspin.subspace.databinding.ActivityMainBinding
 import com.rockspin.subspace.network.SubApi
 import com.rockspin.subspace.util.SubFileHelper
+import rx.Observable
+import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
-import java.io.File
-import java.io.FileWriter
 
 
 class MainActivity : AppCompatActivity() {
@@ -68,21 +68,23 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val movieFile = subFileHelper.subCandidates.first()
-
-        subApi.downloadSubtitleForMovieFile(movieFile)
+        val subCandidates = subFileHelper.subCandidates
+        Observable.from(subCandidates)
             .subscribeOn(Schedulers.io())
-            .map { subtitle ->
-                subFileHelper.createSubtitleForFile(movieFile, subtitle)
+            .flatMap { movieFile ->
+                Single.zip(subApi.downloadSubtitleForMovieFile(movieFile), Single.just(movieFile), { subtitle, movieFile ->
+                    Pair(subtitle, movieFile)
+                }).toObservable().onErrorResumeNext { Observable.empty() }
             }
+            .map { pair -> subFileHelper.createSubtitleForFile(pair.second, pair.first) }
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({ file ->
                 Toast.makeText(this, "Successfully downloaded $file", Toast.LENGTH_LONG).show()
             }, { throwable ->
-                Log.e(MainActivity::class.java.simpleName, "Error while downloading subtitle: ${throwable.message}")
-                Toast.makeText(this, "Could not download subtitle for ${movieFile.nameWithoutExtension}", Toast.LENGTH_SHORT).show()
+                val error = "Error while downloading subtitle: ${throwable.message}"
+                Log.e(MainActivity::class.java.simpleName, error)
+                Toast.makeText(this, error, Toast.LENGTH_LONG).show()
             })
-
     }
 
     private fun permissionCheck(): Boolean {
