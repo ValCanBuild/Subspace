@@ -37,8 +37,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:24.2.1'
     compile 'com.android.support.constraint:constraint-layout:1.0.0-beta4'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile 'org.jetbrains.kotlinx:kotlinx-coroutines-core:0.3-beta'
-    compile 'org.jetbrains.kotlinx:kotlinx-coroutines-rx:0.3-beta'
     compile 'com.nononsenseapps:filepicker:3.1.0'
 
     compile 'io.reactivex:rxkotlin:0.60.0'

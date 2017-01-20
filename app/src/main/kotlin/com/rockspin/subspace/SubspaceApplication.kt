@@ -10,5 +10,7 @@ class SubspaceApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        //http://api.thesubdb.com
     }
 }

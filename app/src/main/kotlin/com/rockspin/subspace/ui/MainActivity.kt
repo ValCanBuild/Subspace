@@ -1,14 +1,29 @@
 package com.rockspin.subspace.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.databinding.DataBindingUtil
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.preference.PreferenceManager
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
+import android.support.v7.app.AppCompatActivity
+import android.util.Log
+import android.widget.Toast
 import com.rockspin.subspace.R
 import com.rockspin.subspace.databinding.ActivityMainBinding
+import com.rockspin.subspace.network.SubApi
+import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
+import java.io.File
+import java.io.FileWriter
+
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var binding: ActivityMainBinding
+
+    private val subApi = SubApi()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,5 +33,82 @@ class MainActivity : AppCompatActivity() {
         fragmentManager.beginTransaction()
             .replace(R.id.settingsFragment, SettingsFragment())
             .commit()
+
+        binding.subCheckButton.setOnClickListener {
+            checkForSubtitles()
+        }
+    }
+
+    private fun checkForSubtitles() {
+
+        if (!permissionCheck()) {
+            return
+        }
+
+        // TODO: Check for connectivity
+
+        // 1. Open the target folder we're monitoring
+        // 2. Find the first file there that's one of the allowed file types : avi, mkv, mp4, mov
+        // 3. Make sure there isn't a corresponding .srt file in that folder
+        // 4. Try and download a subtitle for that file
+        // 5. Report success / error
+
+        val allowedExtensions = arrayOf("avi", "mkv", "mp4", "mov")
+
+        val rootFolderPathStr = PreferenceManager.getDefaultSharedPreferences(this).getString(getString(R.string
+            .key_folder_to_monitor), null)
+
+        if (rootFolderPathStr == null) {
+            Toast.makeText(this, "Path to root folder not set", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val rootFolder = File(rootFolderPathStr)
+
+        val movieFile = rootFolder.listFiles { it -> allowedExtensions.contains(it.extension) }
+            .filter { it ->
+                val subFile = File("${it.parent}/${it.nameWithoutExtension}.srt")
+                !subFile.exists()
+            }
+            .firstOrNull()
+
+        if (movieFile == null) {
+            Toast.makeText(this, "No available files found", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        subApi.downloadSubtitleForMovieFile(movieFile)
+            .subscribeOn(Schedulers.io())
+            .map { subtitle ->
+                val srtFile = File("${movieFile.parent}/${movieFile.nameWithoutExtension}.srt")
+                val fileWriter = FileWriter(srtFile)
+                fileWriter.write(subtitle)
+                fileWriter.flush()
+                fileWriter.close()
+
+                srtFile
+            }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ file ->
+                Toast.makeText(this, "Successfully downloaded $file", Toast.LENGTH_LONG).show()
+            }, { throwable ->
+                Log.e(MainActivity::class.java.simpleName, "Error while downloading subtitle: ${throwable.message}")
+                Toast.makeText(this, "Could not download subtitle for ${movieFile.nameWithoutExtension}", Toast.LENGTH_SHORT).show()
+            })
+
+    }
+
+    private fun permissionCheck(): Boolean {
+        val grantedValue = PackageManager.PERMISSION_GRANTED
+        val permissionsGranted =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == grantedValue
+                && ContextCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE) == grantedValue
+
+        if (!permissionsGranted) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission
+                .WRITE_EXTERNAL_STORAGE), 1)
+        }
+
+        return permissionsGranted
     }
 }

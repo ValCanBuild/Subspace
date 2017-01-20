@@ -9,6 +9,7 @@ import android.preference.PreferenceFragment
 import android.preference.PreferenceManager
 import com.nononsenseapps.filepicker.FilePickerActivity
 import com.rockspin.subspace.R
+import java.io.File
 
 
 /**
@@ -55,7 +56,8 @@ class SettingsFragment : PreferenceFragment(), SharedPreferences.OnSharedPrefere
             val uri = data?.data
 
             if (uri != null) {
-                sharedPreferences.edit().putString(folderToMonitorKey, uri.toString()).apply()
+                val filePath = uri.toString().removePrefix("file:///")
+                sharedPreferences.edit().putString(folderToMonitorKey, filePath).apply()
             }
         }
 

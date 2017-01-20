@@ -2,6 +2,7 @@
     <string name="app_name">Subspace</string>
     <string name="folder_to_monitor">Folder to monitor</string>
     <string name="select_folder_to_monitor">Select folder to monitor</string>
+    <string name="download_subtitles">Download Subtitles</string>
 
     <!-- Preference keys -->
     <string name="key_folder_to_monitor">folder_to_monitor</string>
