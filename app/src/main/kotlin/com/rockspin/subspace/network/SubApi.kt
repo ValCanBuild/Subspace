@@ -10,9 +10,6 @@ import java.io.FileInputStream
 import java.io.InputStreamReader
 import java.security.MessageDigest
 
-/**
- * Created by valentin.hinov on 19/01/2017.
- */
 class SubApi {
 
     private val subInterface: SubtitleWebInterface by lazy {
